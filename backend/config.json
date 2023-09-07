@@ -1,0 +1,13 @@
+{
+  "jira_server" : "https://product-jira.ariba.com",
+  "jira_user": "ARIBA_DEVOPS",
+  "jira_pass": "2^l5^8SOd1KPp$*G^OX",
+  "jira_query_filter": "(assignee = i312250 or assignee = i740733 or assignee = i573453) AND resolution = Unresolved  AND project = ESS order by updated DESC",
+  "mail_sending_password": "Ariba@1234",
+  "svc_url" : "https://azure-openai-serv-i057149.cfapps.sap.hana.ondemand.com",
+  "client_id" : "sb-7f966fb6-ddfb-4fbe-a0a6-402fc85bc3dc!b85851|azure-openai-service-i057149-xs!b16730",
+  "client_secret" : "ba681a2e-e2f6-4ed7-b9ea-9536f7c239e7$C1aD40juyxlJg_eaEICYmMEJ9CYxY_kV2N_7Y-eAh7Q=",
+  "uaa_url" : "https://toolsteamai-2834lxx7.authentication.sap.hana.ondemand.com",
+  "confluence_token" : "Mzg3NzQ3NjA3NjMzOs/j6HG2WQCywRPTY7GlOqu92Oiq",
+  "confluence_page" : "321817066"
+}

@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema" version="2.0" exclude-result-prefixes="#all">
+    <xsl:output method="xml" indent="no" omit-xml-declaration="yes"/>
+    <xsl:param name="anPayloadID"/>
+    <xsl:param name="documentreceiptdate"/>
+    <xsl:template match="Combined">
+
+            <xsl:if test="string-length(normalize-space(Payload/cXML/Request/@deploymentMode)) > 0">
+                <deploymentMode>
+                    <xsl:choose>
+                        <xsl:when test="$anEnvName = 'prod'">
+                            <xsl:value-of select="'production'"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:value-of select="'test'"/>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </deploymentMode>
+            </xsl:if>
+            <supplierInvoiceId>
+                <xsl:value-of select="substring(Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailRequestHeader/@invoiceID, 1,16)"/>
+            </supplierInvoiceId>
+            <xsl:choose>
+                <xsl:when test="data.purpose = 'I'">
+                    <purpose>
+                        <xsl:value-of select="'standard'"/>
+                    </purpose>
+                </xsl:when>
+                <xsl:when test="data.purpose = '3'">
+                    <purpose>
+                        <xsl:value-of select="'debitMemo'"/>
+                    </purpose>
+                </xsl:when>
+                <xsl:when test="data.purpose = 'C' or data.purpose = '4'">
+                    <purpose>
+                        <xsl:value-of select="'creditMemo'"/>
+                    </purpose>
+                </xsl:when>
+            </xsl:choose>
+            <Operation>
+                <xsl:value-of select="'new'"/>
+            </Operation>
+            <InvoiceDate>
+                <xsl:value-of select="concat(substring(Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailRequestHeader/@InvoiceDate, 1, 10),'T00:00:00.000Z')"/>
+            </InvoiceDate>
+            <InvoiceDetailHeaderIndicator>
+                <isHeaderInvoice>
+                    <xsl:value-of select="'yes'"/>
+                </isHeaderInvoice>
+            </InvoiceDetailHeaderIndicator>
+        
+    </xsl:template>
+
+        <xsl:if test="string-length(normalize-space(Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailRequestHeader/InvoiceDetailLineIndicator)) > 0">
+            <InvoiceDetailLineIndicator>
+                <xsl:value-of select="Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailRequestHeader/InvoiceDetailLineIndicator"/>
+            </InvoiceDetailLineIndicator>
+        </xsl:if>
+        <xsl:if test="string-length(normalize-space(Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailRequestHeader/PaymentInformation/paymentNetDueDate)) > 0">
+            <PaymentNetDueDate>
+                <xsl:value-of select="format-date(Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailRequestHeader/PaymentInformation/paymentNetDueDate, '[Y0001]-[M01]-[D01]')"/>
+            </PaymentNetDueDate>
+        </xsl:if>
+        <xsl:if test="string-length(normalize-space(Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailRequestHeader/Extrinsic/[@name='originalInvoiceNo'])) > 0">
+            <OriginalInvoiceNo>
+                <xsl:value-of select="Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailRequestHeader/Extrinsic/[@name='originalInvoiceNo']"/>
+            </OriginalInvoiceNo>
+        </xsl:if>
+        <xsl:if test="string-length(normalize-space(Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailOrderInfo/OrderIDInfo/@orderID)) > 0">
+            <OrderID>
+                <xsl:value-of select="Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailOrderInfo/OrderIDInfo/@orderID"/>
+            </OrderID>
+        </xsl:if>
+        <xsl:if test="string-length(normalize-space(Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailOrderSummary/@invoiceLineNumber)) > 0">
+            <InvoiceLineNumber>
+                <xsl:value-of select="'1'"/>
+            </InvoiceLineNumber>
+        </xsl:if>
+    
+
+        <grossAmount>
+            <xsl:choose>
+                <xsl:when test="string-length(normalize-space(Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailOrderSummary/SubtotalAmount/Money)) > 0">
+                    <xsl:value-of select="format-number(xs:decimal(Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailOrderSummary/SubtotalAmount/Money), '0.000000')"/>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:value-of select="format-number(xs:decimal(sum($v_gross_amount/value)), '0.000000')">
+                </xsl:otherwise>
+            </xsl:choose>
+        </grossAmount>
+        <currency>
+            <xsl:value-of select="substring(Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailOrderSummary/SubtotalAmount/Money/@currency, 1, 5)"/>
+        </currency>
+        <taxes>
+            <amount>
+                <xsl:choose>
+                    <xsl:when test="string-length(normalize-space(Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailSummary/Tax/Money)) > 0">
+                        <xsl:value-of select="format-number(xs:decimal(Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailSummary/Tax/Money), '0.000000')"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:value-of select="0"/>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </amount>
+            <currency>
+                <xsl:value-of select="substring(Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailSummary/Tax/Money/@currency, 1, 5)"/>
+            </currency>
+            <description>
+                <xsl:value-of select="' '"/>
+            </description>
+        </taxes>
+    
+
+            <xsl:choose>
+                <xsl:when test="Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailSummary/Tax/Description/@lang">
+                    <xsl:value-of select="'en-US'"/>
+                </xsl:when>
+            </xsl:choose>
+            <xsl:if test="Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailSummary/GrossAmount/Money">
+                <xsl:choose>
+                    <xsl:when test="Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailSummary/GrossAmount/Money">
+                        <xsl:value-of select="Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailSummary/GrossAmount/Money"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:value-of select="concat('-', Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailSummary/GrossAmount/Money)"/>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:if>
+            <xsl:if test="Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailSummary/GrossAmount/Money/@currency">
+                <xsl:value-of select="Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailSummary/GrossAmount/Money/@currency"/>
+            </xsl:if>
+            <xsl:if test="Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailSummary/NetAmount/Money">
+                <xsl:choose>
+                    <xsl:when test="Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailSummary/NetAmount/Money">
+                        <xsl:value-of select="Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailSummary/NetAmount/Money"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:value-of select="concat('-', Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailSummary/NetAmount/Money)"/>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:if>
+            <xsl:if test="Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailSummary/NetAmount/Money/@currency">
+                <xsl:value-of select="Payload/cXML/Request/InvoiceDetailRequest/InvoiceDetailHeaderOrder/InvoiceDetailSummary/NetAmount/Money/@currency"/>
+            </xsl:if>
+        
+
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema" version="2.0" exclude-result-prefixes="#all">
+    <xsl:output method="xml" indent="no" omit-xml-declaration="yes"/>
+    <xsl:param name="data.id"/>
+    <xsl:param name="root.time"/>
+    <xsl:param name="data.receiverSupplier"/>
+    <xsl:template match="Combined">
+        <Combined>
+            <Payload>
+                <cXML>
+                    <xsl:attribute name="PayloadID">
+                        <xsl:value-of select="data.id"/>
+                    </xsl:attribute>
+                    <xsl:attribute name="timestamp">
+                        <xsl:value-of select="root.time"/>
+                    </xsl:attribute>
+                    <Header>
+                        <From>
+                            <Credential>
+                                <xsl:attribute name="domain">
+                                    <xsl:value-of select="'VendorID'"/>
+                                </xsl:attribute>
+                                <Identity>
+                                    <xsl:value-of select="data.receiverSupplier"/>
+                                </Identity>
+                                <Credential>
+                                    <xsl:attribute name="domain">
+                                        <xsl:value-of select="'EndPointID'"/>
+                                    </xsl:attribute>
+                                    <Identity>
+                                        <xsl:value-of select="'CIG'"/>
+                                    </Identity>
+                                </Credential>
+                            </Credential>
+                        </From>
+                        <To/>
+                    </Header>
+                </cXML>
+            </Payload>
+        </Combined>
+    </xsl:template>
+</xsl:stylesheet>
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema" version="2.0" exclude-result-prefixes="#all">
+    <xsl:output method="xml" indent="no" omit-xml-declaration="yes"/>
+    <xsl:param name="anSupplierANID"/>
+    <xsl:param name="anProviderANID"/>
+    <xsl:param name="anSharedSecret"/>
+    <xsl:template match="Combined">
+        <Payload>
+            <cXML>
+                <Header>
+                    <To>
+                        <Credential>
+                            <xsl:attribute name="domain">
+                                <xsl:value-of select="'NetworkID'"/>
+                            </xsl:attribute>
+                            <Identity>
+                                <xsl:value-of select="$anSupplierANID"/>
+                            </Identity>
+                        </Credential>
+                    </To>
+                    <Sender>
+                        <Credential>
+                            <xsl:attribute name="domain">
+                                <xsl:value-of select="'NetworkID'"/>
+                            </xsl:attribute>
+                            <Identity>
+                                <xsl:value-of select="$anProviderANID"/>
+                            </Identity>
+                            <Sharedsecret>
+                                <xsl:value-of select="$anSharedSecret"/>
+                            </Sharedsecret>
+                        </Credential>
+                    </Sender>
+                    <UserAgent>
+                        <xsl:value-of select="'Ariba Supplier'"/>
+                    </UserAgent>
+                </Header>
+            </cXML>
+        </Payload>
+    </xsl:template>
+</xsl:stylesheet>
+
+</xsl:stylesheet>
